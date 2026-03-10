@@ -33,7 +33,7 @@ repo_uri = "https://github.com/torvalds/linux" # @param {"type":"string","placeh
 repo_name = "linux" # @param {"type":"string","placeholder":"name"}
 repo_branch = "master" # @param {"type":"string","placeholder":"branch"}
 ramdisk_path = "ramdisk" # @param {"type":"string","placeholder":"ramdisk-path"}
-ramdisk_size = "6G" # @param {"type":"string","placeholder":"ramdisk-size"}
+ramdisk_size = "10G" # @param {"type":"string","placeholder":"ramdisk-size"}
 
 from os import environ as env
 
@@ -115,6 +115,11 @@ _ramdisk_set() {
         "size=${_size}" \
       "none" \
       "${_path}"
+  else
+    umount \
+      -l \
+      "${_path}" || \
+      true
   fi
 }
 
@@ -132,7 +137,8 @@ _git_clone() {
   )
   rm \
     -rf \
-    "${_path}" ||
+    "${_path}" \
+    "${PWD}/${_repo_name}" ||
   true
   git \
     init \
@@ -147,10 +153,6 @@ _git_clone() {
     "${_git_opts[@]}" \
     "fetch" \
       "origin" \
-      "master"
-  git \
-    "${_git_opts[@]}" \
-    "checkout" \
       "master"
 }
 
@@ -176,6 +178,8 @@ _git_bundle() {
     -C
       "${_repo_name}"
   )
+  echo \
+    "Create bundle."
   git \
     "${_git_opts[@]}" \
     bundle \
@@ -185,11 +189,17 @@ _git_bundle() {
   mv \
     "${_ramdisk_path}/${_repo_name}.bundle" \
     "${PWD}"
+  split \
+    -b \
+      "1G" \
+    --numeric-suffix=1 \
+    "${_repo_name}.bundle" \
+    "${_repo_name}.bundle."
 }
 
 _set_overrides() {
   if [[ "${ramdisk_size}" == "" ]]; then
-    ramdisk_size="6G"
+    ramdisk_size="10G"
   fi
 }
 

@@ -24,6 +24,18 @@
 Creates a git bundle file for a git repository
 on a Google Colab instance.
 
+To maximize speed, it uses a ramdisk.
+
+For comparison, the example repository
+used, linux kernel, checks out in
+over 20 minutes on disk, while on
+a ram disk it takes around 15 minutes in total.
+
+The repository is then moved on disk while
+again the bundle created from local checkout
+is written in RAM and then
+moved on disk.
+
 You can run the program at this repo
 from Gogole Colab through the following
 url
