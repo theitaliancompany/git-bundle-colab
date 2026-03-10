@@ -1,0 +1,228 @@
+#!/usr/bin/env ipython
+
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+#    ----------------------------------------------------------------------
+#    Copyright © 2026  Pellegrino Prevete
+#
+#    All rights reserved
+#    ----------------------------------------------------------------------
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# @markdown # Git Bundle on Google Colab (`git-bundle-colab`)
+
+# @markdown Download a git repository
+# @markdown using Google Colab computers.
+
+# @markdown The download and the
+# @markdown are maximized using a ramdisk.
+
+repo_uri = "https://github.com/torvalds/linux" # @param {"type":"string","placeholder":"uri"}
+repo_name = "linux" # @param {"type":"string","placeholder":"name"}
+repo_branch = "master" # @param {"type":"string","placeholder":"branch"}
+ramdisk_path = "ramdisk" # @param {"type":"string","placeholder":"ramdisk-path"}
+ramdisk_size = "6G" # @param {"type":"string","placeholder":"ramdisk-size"}
+
+from os import environ as env
+
+env["_repo_uri"] = repo_uri
+env["_repo_branch"] = repo_branch
+env["_ramdisk_path"] = ramdisk_path
+env["_ramdisk_size"] = ramdisk_size
+
+_git_bundle = """
+
+_global_variables() {
+  repo_uri=""
+  repo_name=""
+  repo_branch=""
+  ramdisk_path=""
+  ramdisk_size=""
+}
+
+_requirements() {
+  _git="$(
+    command \
+      -v \
+      "git")"
+  if [[ "${_git}" == "" ]]; then
+    rm \
+      /var/lib/dpkg/lock-frontend || \
+    true
+    killall \
+      dpkg || \
+      true
+    dpkg \
+      --configure -a || \
+    true
+    apt-get \
+      install \
+      "git"
+  fi
+  if [[ ! -e "crash-bash" ]]; then
+    git \
+      clone \
+      "https://github.com/themartiancompany/crash-bash"
+    cd \
+      "crash-bash"
+    make \
+      DESTDIR="/" \
+      PREFIX="/usr" \
+      install
+    cd \
+      ".."
+  fi
+fi
+
+_ramdisk_set() {
+  local \
+    _path="${1}" \
+    _size="${2}"
+  if [[ ! -e "${_path}" ]]; then
+    mkdir \
+      -p \
+      "${_path}"
+    mount \
+      -t \
+        "tmpfs" \
+      -o \
+        "size=${_size}"
+      "${_path}"
+  fi
+}
+
+_git_clone() {
+  local \
+    _uri="${1}" \
+    _branch="${2}" \
+    _path="${3}" \
+    _git_opts=()
+  _git_opts+=(
+    -C
+      "${_path}"
+  )
+  git \
+    init \
+    "${_path}"
+  git \
+    "${_git_opts[@]}" \
+    remote \
+      add \
+      "origin" \
+      "${_uri}"
+  git \
+    "${_git_opts[@]}" \
+    "fetch" \
+      "origin" \
+      "master"
+  git \
+    "${_git_opts[@]}" \
+    "checkout" \
+      "master"
+  # git \
+  #   "${_git_opts[@]}" \
+  #   "bundle" \
+  #     "create" \
+  #     "master"
+}
+
+_git_bundle() {
+  local \
+    _repo_uri="${1}" \
+    _repo_name="${2}" \
+    _repo_branch="${3}" \
+    _ramdisk_path="${4}" \
+    _ramdisk_size="${5}"
+  _ramdisk_set \
+    "${_ramdisk_path}" \
+    "${_ramdisk_size}"
+  _git_clone \
+    "${_repo_uri}" \
+    "${PWD}/ramdisk/${_repo_name}"
+  mv \
+    "${PWD}/ramdisk/${_repo_name}" \
+    "${PWD}"
+  mv \
+    
+}
+
+_set_overrides() {
+  if [[ ! -v "override_ramdisk_size" ]]; then
+    _ramdisk_size="6G"
+  fi
+}
+
+_requirements
+
+_repo_uri="${1}"
+_repo_name="${2}"
+_repo_branch="${3}"
+_ramdisk_path="${4}"
+_ramdisk_size="${5}"
+
+_app_opts=(
+  "${_repo_uri}"
+  "${_repo_name}"
+  "${_repo_branch}"
+  "${_ramdisk_path}"
+  "${_ramdisk_size}"
+)
+
+_git_bundle \
+  "${_app_opts[@]}"
+"""
+
+_f = open(
+       "/usr/bin/git-bundle-colab",
+        "w")
+_f.write(
+  _git_bundle)
+
+!chmod 755 "/usr/bin/git-bundle"
+!git-bundle "${_repo_uri}" "${_repo_name}" "${_repo_branch}" "${_ramdisk_path}" "${_ramdisk_size}"
+
+# @markdown ### Source availability
+
+# @markdown This program has been officially published
+# @markdown on the the uncensorable
+# @markdown [Ur](
+# @markdown   https://github.com/themartiancompany/ur)
+# @markdown user repository and application store as
+# @markdown `git-bundle-colab`.
+# @markdown The source code is published on the
+# @markdown [Ethereum Virtual Machine File System](
+# @markdown   https://github.com/themartiancompany/evmfs)
+# @markdown so it can't possibly be taken down.
+
+# @markdown To retrieve the sources for this program
+# @markdown on your computer just type
+
+# @markdown ```bash
+# @markdown ur \
+# @markdown   git-bundle-colab
+# @markdown ```
+
+# @markdown A censorable HTTP Github mirror of the recipe published there,
+# @markdown is hosted on
+# @markdown [git-bundle-colab-ur](
+# @markdown   https://github.com/themartiancompany/git-bundle-colab-ur).
+
+# @markdown Be aware the mirror could go offline any time as Github and more
+# @markdown in general all HTTP resources are inherently unstable and censorable.
+
+# @markdown ## License
+
+# @markdown This program is released by Pellegrino Prevete under the terms
+# @markdown of the GNU Affero General Public License version 3.
